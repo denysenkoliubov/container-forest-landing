@@ -11,7 +11,7 @@ http.createServer((req, res) => {
     req.on('end', () => { fs.writeFileSync(path.join(root, name), Buffer.concat(chunks)); res.end('ok'); });
     return;
   }
-  const p = path.join(root, decodeURIComponent(u.pathname === '/' ? '/index.html' : u.pathname));
+  const p = path.join(root, decodeURIComponent(u.pathname.endsWith('/') ? u.pathname + 'index.html' : u.pathname));
   if (!p.startsWith(root)) { res.writeHead(403); return res.end(); }
   fs.readFile(p, (e, d) => {
     if (e) { res.writeHead(404); return res.end('not found'); }
