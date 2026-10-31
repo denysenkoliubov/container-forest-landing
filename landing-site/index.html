@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Керування Docker-контейнерами на кількох серверах через одну вебпанель, Discord-бот і CLI. Секрети в git зашифровані.">
+<title>Container Forest</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='a-body' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%232c6a47'/%3E%3Cstop offset='1' stop-color='%23123323'/%3E%3C/linearGradient%3E%3CclipPath id='a-tile'%3E%3Crect x='2' y='2' width='60' height='60' rx='12'/%3E%3C/clipPath%3E%3C/defs%3E%3Cg clip-path='url(%23a-tile)'%3E%3Crect x='2' y='2' width='60' height='60' fill='url(%23a-body)'/%3E%3Cpath fill='%230b1d14' d='M9.5 31L13.1 51H5.9ZM18.5 22L22.1 51H14.9ZM27.5 33L31.1 51H23.9ZM36.5 16L40.1 51H32.9ZM45.5 26L49.1 51H41.9ZM54.5 30L58.1 51H50.9Z'/%3E%3Crect x='2' y='2' width='60' height='9' fill='%23efc27c'/%3E%3Cpath fill='%23d6a45e' d='M5.5 2h3v7.6h-3ZM11.5 2h3v7.6h-3ZM17.5 2h3v7.6h-3ZM23.5 2h3v7.6h-3ZM29.5 2h3v7.6h-3ZM35.5 2h3v7.6h-3ZM41.5 2h3v7.6h-3ZM47.5 2h3v7.6h-3ZM53.5 2h3v7.6h-3ZM59.5 2h3v7.6h-3Z'/%3E%3Crect x='2' y='9.6' width='60' height='1.4' fill='%23c9934a'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: full-bleed dawn-forest hero, then a dark understory of bands; one sunlight accent, rust as the container's echo. Single deliberate dark look. */
+:root {
+  --night: #0c130f;
+  --moss: #121c16;
+  --moss-2: #18241d;
+  --line: #27362c;
+  --fog: #e5eadc;
+  --fog-dim: #a6b3a2;
+  --fog-faint: #6f7e6c;
+  --sun: #efc27c;
+  --sun-deep: #c9934a;
+  --rust: #b9764e;
+  --ok: #8cc56a;
+  --warn: #e4b052;
+  --err: #e2705f;
+  --display: "Unbounded", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --wrap: 1180px;
+  --gutter-l: max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--night);
+  color: var(--fog);
+  font: 400 16px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--night); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--sun); outline-offset: 3px; border-radius: 6px; }
+.wrap { max-width: var(--wrap); margin-inline: auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: clamp(26px, 3.4vw, 42px); line-height: 1.12; font-weight: 700; }
+h3 { font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--sun); }
+.lede { color: var(--fog-dim); font-size: 18px; max-width: 60ch; }
+code, .mono { font-family: var(--mono); }
+
+/* ---------- nav ---------- */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: color-mix(in oklab, var(--night) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid color-mix(in oklab, var(--line) 70%, transparent);
+}
+.nav .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 18px/1 var(--display); text-decoration: none; letter-spacing: -0.02em; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+.nav-links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; font-weight: 600; }
+.nav-links a { text-decoration: none; color: var(--fog-dim); transition: color .2s; }
+.nav-links a:hover { color: var(--fog); }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 999px;
+  font: 700 15px/1 var(--body); text-decoration: none; border: 1px solid transparent; cursor: pointer;
+  transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
+}
+.btn svg { width: 18px; height: 18px; }
+.btn-sun { background: var(--sun); color: #1c1608; box-shadow: 0 8px 30px -10px color-mix(in oklab, var(--sun) 70%, transparent); }
+.btn-sun:hover { transform: translateY(-1px); background: #f5d095; }
+.btn-ghost { border-color: color-mix(in oklab, var(--fog) 35%, transparent); color: var(--fog); background: color-mix(in oklab, var(--night) 35%, transparent); backdrop-filter: blur(6px); }
+.btn-ghost:hover { border-color: var(--fog); }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 14px; }
+@media (max-width: 860px) { .nav-links { display: none; } .nav .btn { margin-left: auto; } }
+@media (max-width: 420px) { .brand { font-size: 15px; } .nav .wrap { gap: 12px; } .nav .btn-sm { padding: 0 12px; } }
+
+/* ---------- hero ---------- */
+.hero { position: relative; min-height: clamp(600px, 90svh, 940px); display: grid; isolation: isolate; overflow: hidden; }
+.hero picture, .hero picture img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hero picture img { object-fit: cover; object-position: 50% 58%; animation: drift 38s ease-in-out infinite alternate; transform-origin: 55% 55%; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.09) translate(-0.6%, -0.8%); } }
+.hero::after { /* scrims: canopy at top for the headline, grass fading into the page at the bottom */
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--night) 55%, transparent) 0%, transparent 18%),
+    linear-gradient(0deg, var(--night) 0%, color-mix(in oklab, var(--night) 88%, transparent) 16%, color-mix(in oklab, var(--night) 40%, transparent) 36%, transparent 52%);
+}
+.rays { position: absolute; inset: -20% -10%; z-index: 1; pointer-events: none; mix-blend-mode: screen; }
+.rays i {
+  position: absolute; top: -10%; height: 140%; width: var(--w); left: var(--x);
+  background: linear-gradient(90deg, transparent, rgba(255, 226, 168, var(--a)) 50%, transparent);
+  transform: rotate(32deg); transform-origin: top center;
+  animation: ray var(--d) ease-in-out infinite alternate; animation-delay: var(--dl);
+}
+@keyframes ray { from { opacity: .25; translate: 0 0; } to { opacity: 1; translate: -40px 0; } }
+.motes { position: absolute; inset: 0; z-index: 1; pointer-events: none; width: 100%; height: 100%; }
+.hero-inner { position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: end; gap: 32px 48px; padding-block: 40px clamp(28px, 5vh, 56px); }
+@media (max-width: 900px) { .hero-inner { grid-template-columns: 1fr; } }
+/* phones and tablets in portrait: the render sits on top as a picture, the copy follows on the dark grass */
+@media (max-width: 900px) and (orientation: portrait) {
+  .hero { display: block; min-height: 0; }
+  .hero picture { position: relative; display: block; height: min(74svh, 150vw); }
+  .hero picture img { object-position: 50% 54%; }
+  .hero-inner { margin-top: -16svh; padding-top: 0; }
+  .hero::after { background: linear-gradient(180deg, color-mix(in oklab, var(--night) 45%, transparent) 0%, transparent 12%), linear-gradient(0deg, var(--night) 0%, var(--night) 34%, color-mix(in oklab, var(--night) 55%, transparent) 46%, transparent 60%); }
+}
+.hero h1 {
+  font-size: clamp(32px, 4vw, 58px); line-height: 1.05; font-weight: 800; letter-spacing: -0.03em; max-width: 17ch;
+  text-shadow: 0 2px 30px rgba(6, 12, 8, .45);
+}
+.hero h1 em { font-style: normal; color: var(--sun); }
+.hero-copy { display: grid; gap: 18px; }
+.hero-copy .lede { color: #d9e1d0; text-shadow: 0 1px 16px rgba(6, 12, 8, .6); max-width: 58ch; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.badge { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 6px 12px 6px 8px; border-radius: 999px; background: color-mix(in oklab, var(--night) 55%, transparent); border: 1px solid color-mix(in oklab, var(--fog) 18%, transparent); backdrop-filter: blur(6px); font: 600 12px/1 var(--mono); letter-spacing: .06em; color: var(--fog); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 color-mix(in oklab, var(--ok) 60%, transparent); animation: pulse 2.4s infinite; flex: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--ok) 55%, transparent); } 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.facts { display: grid; grid-template-columns: 1fr; gap: 1px; max-width: 420px; width: 100%; justify-self: end; border-radius: 16px; overflow: hidden; background: color-mix(in oklab, var(--fog) 14%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.fact { padding: 14px 18px; background: color-mix(in oklab, var(--night) 62%, transparent); display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; }
+.fact b { font: 700 26px/1 var(--display); color: var(--sun); font-variant-numeric: tabular-nums; }
+.fact span { font-size: 13px; color: var(--fog-dim); line-height: 1.35; }
+@media (max-width: 900px) { .facts { justify-self: start; max-width: 560px; } }
+
+/* load sequence */
+.rise { animation: rise .9s cubic-bezier(.2, .7, .2, 1) both; animation-delay: var(--dl, 0s); }
+@keyframes rise { from { opacity: .35; transform: translateY(18px); } }
+
+/* ---------- sections ---------- */
+section { padding-block: clamp(64px, 10vw, 120px); }
+.sec-head { display: grid; gap: 16px; margin-bottom: 44px; }
+.band { background: var(--moss); border-block: 1px solid var(--line); }
+
+/* jobs */
+.jobs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.job { display: grid; gap: 10px; align-content: start; padding-top: 18px; border-top: 1px solid var(--line); }
+.job svg { width: 26px; height: 26px; color: var(--sun); }
+.job p { color: var(--fog-dim); font-size: 15px; }
+@media (max-width: 960px) { .jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .jobs { grid-template-columns: 1fr; } }
+
+/* ---------- live demo ---------- */
+.demo { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 980px) { .demo { grid-template-columns: 1fr; } }
+.window { background: var(--moss-2); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 30px 80px -40px rgba(0, 0, 0, .8); min-width: 0; }
+.win-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); font: 600 12px/1 var(--mono); color: var(--fog-faint); }
+.win-bar .lights { display: flex; gap: 6px; }
+.win-bar .lights i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.win-bar .title { color: var(--fog-dim); }
+.envs { display: flex; gap: 8px; padding: 14px 16px 0; flex-wrap: wrap; }
+.env { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 10px; font: 600 13px/1 var(--body); background: transparent; color: var(--fog-dim); border: 1px solid var(--line); cursor: pointer; }
+.env[aria-pressed="true"] { background: var(--moss); color: var(--fog); border-color: color-mix(in oklab, var(--sun) 45%, var(--line)); }
+.env .dot { width: 7px; height: 7px; }
+.env .dot.off { background: var(--fog-faint); animation: none; }
+.table-wrap { overflow-x: auto; padding: 8px 8px 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.ct th { text-align: left; font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--fog-faint); padding: 12px 10px; }
+.ct td { padding: 11px 10px; border-top: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ct td.name { font-family: var(--mono); font-size: 13px; }
+.ct td.name small { display: block; color: var(--fog-faint); font-size: 11px; }
+.pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; font: 600 12px/1 var(--body); }
+.pill.run { color: var(--ok); background: color-mix(in oklab, var(--ok) 13%, transparent); }
+.pill.stop { color: var(--fog-dim); background: color-mix(in oklab, var(--fog) 8%, transparent); }
+.pill.wait { color: var(--warn); background: color-mix(in oklab, var(--warn) 13%, transparent); }
+.pill.err { color: var(--err); background: color-mix(in oklab, var(--err) 13%, transparent); }
+.pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.wait i { animation: blink 0.9s infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+.spark { width: 72px; height: 22px; display: block; }
+.spark path { fill: none; stroke: var(--sun-deep); stroke-width: 1.5; }
+.spark .area { fill: color-mix(in oklab, var(--sun) 14%, transparent); stroke: none; }
+.act { font: 600 12px/1 var(--body); padding: 7px 10px; border-radius: 8px; background: transparent; color: var(--fog); border: 1px solid var(--line); cursor: pointer; transition: border-color .2s, background .2s; }
+.act:hover:not(:disabled) { border-color: var(--sun); background: color-mix(in oklab, var(--sun) 8%, transparent); }
+.act:disabled { opacity: .45; cursor: default; }
+.side-stack { display: grid; gap: 20px; min-width: 0; }
+.chat { padding: 16px; display: grid; gap: 14px; min-height: 230px; align-content: start; }
+.msg { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; animation: rise .5s both; }
+.ava { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 800 13px/1 var(--display); }
+.ava.u { background: #3b4a7a; color: #dfe5ff; }
+.ava.b { background: var(--rust); color: #2a140a; }
+.msg .who { font: 700 13px/1.2 var(--body); }
+.msg .who small { font-weight: 500; color: var(--fog-faint); margin-left: 6px; }
+.msg .txt { font-size: 14px; color: var(--fog-dim); margin-top: 3px; overflow-wrap: anywhere; }
+.msg code { background: var(--night); padding: 1px 6px; border-radius: 5px; color: var(--fog); font-size: 12.5px; }
+.embed { margin-top: 6px; border-left: 3px solid var(--ok); background: var(--night); border-radius: 6px; padding: 8px 10px; font-size: 13px; color: var(--fog-dim); }
+.typing { display: inline-flex; gap: 3px; }
+.typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--fog-faint); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+.term { padding: 14px 16px 18px; font: 400 13px/1.7 var(--mono); color: var(--fog-dim); min-height: 170px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.term .p { color: var(--sun); }
+.term .ok { color: var(--ok); }
+.term .caret { display: inline-block; width: 8px; height: 15px; background: var(--fog); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+.demo-note { margin-top: 14px; font-size: 13px; color: var(--fog-faint); }
+
+/* ---------- architecture ---------- */
+.arch { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+@media (max-width: 980px) { .arch { grid-template-columns: 1fr; } }
+.diagram { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: radial-gradient(120% 80% at 70% 20%, color-mix(in oklab, var(--sun) 6%, transparent), transparent 60%), var(--moss); padding: 12px; }
+.diagram svg { display: block; width: 100%; min-width: 700px; height: auto; }
+.diagram .node rect { fill: var(--moss-2); stroke: var(--line); }
+.diagram .node.core rect { stroke: color-mix(in oklab, var(--sun) 55%, var(--line)); fill: color-mix(in oklab, var(--sun) 7%, var(--moss-2)); }
+.diagram .node.srv > rect { fill: color-mix(in oklab, var(--night) 40%, var(--moss)); stroke-dasharray: 4 4; }
+.diagram text { fill: var(--fog); font: 600 14px var(--body); }
+.diagram text.sub { fill: var(--fog-faint); font: 400 11.5px var(--mono); }
+.diagram text.lbl { fill: var(--fog-dim); font: 400 11px var(--mono); }
+.diagram .flow { fill: none; stroke: color-mix(in oklab, var(--sun) 70%, transparent); stroke-width: 1.6; stroke-dasharray: 3 9; stroke-linecap: round; animation: flow 1.4s linear infinite; }
+.diagram .flow.rev { animation-direction: reverse; }
+.diagram .wire { fill: none; stroke: var(--line); stroke-width: 1.6; }
+@keyframes flow { to { stroke-dashoffset: -24; } }
+.points { display: grid; gap: 22px; }
+.point { display: grid; gap: 6px; }
+.point p { color: var(--fog-dim); font-size: 15px; }
+
+/* ---------- secrets ---------- */
+.secrets { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 18px; align-items: center; }
+@media (max-width: 900px) { .secrets { grid-template-columns: 1fr; } .secrets .arrow { transform: rotate(90deg); justify-self: center; } }
+.codecard { background: var(--moss-2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-width: 0; }
+.codecard header { display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font: 600 12px/1.3 var(--mono); color: var(--fog-faint); flex-wrap: wrap; }
+.codecard header b { color: var(--fog-dim); font-weight: 600; }
+.codecard pre { margin: 0; padding: 14px; font: 400 13px/1.75 var(--mono); color: var(--fog-dim); overflow-x: auto; }
+.codecard .k { color: var(--fog); }
+.codecard .enc { color: var(--rust); }
+.codecard .dec { color: var(--ok); }
+.arrow { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: var(--moss); color: var(--sun); }
+.arrow svg { width: 22px; height: 22px; }
+.keys { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.key { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; font: 400 12.5px/1 var(--mono); color: var(--fog-dim); background: var(--moss); }
+.key svg { width: 15px; height: 15px; color: var(--sun); }
+
+/* ---------- roles ---------- */
+.roles-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--moss); }
+.roles { min-width: 620px; }
+.roles th, .roles td { padding: 14px 16px; text-align: center; border-top: 1px solid var(--line); font-size: 14px; }
+.roles thead th { border-top: 0; font: 700 15px/1.2 var(--display); }
+.roles thead th small { display: block; font: 500 12px/1.3 var(--body); color: var(--fog-faint); margin-top: 4px; }
+.roles th[scope="row"] { text-align: left; font-weight: 600; color: var(--fog-dim); }
+.yes { color: var(--ok); font-weight: 700; }
+.no { color: var(--fog-faint); }
+.warn-note { margin-top: 16px; display: flex; gap: 10px; color: var(--fog-dim); font-size: 14px; max-width: 80ch; }
+.warn-note svg { width: 18px; height: 18px; color: var(--warn); flex: none; margin-top: 3px; }
+
+/* ---------- compare ---------- */
+.cmp-wrap { overflow-x: auto; }
+.cmp { min-width: 760px; }
+.cmp th, .cmp td { padding: 14px 14px; border-top: 1px solid var(--line); text-align: left; font-size: 14px; vertical-align: top; }
+.cmp thead th { border-top: 0; font: 700 14px/1.2 var(--body); color: var(--fog-dim); }
+.cmp thead th.us { color: var(--sun); }
+.cmp td.us { background: color-mix(in oklab, var(--sun) 6%, transparent); color: var(--fog); font-weight: 600; }
+.cmp th[scope="row"] { color: var(--fog); font-weight: 600; width: 26%; }
+.cmp td { color: var(--fog-dim); }
+.honest { margin-top: 18px; font-size: 14px; color: var(--fog-faint); max-width: 80ch; }
+
+/* ---------- roadmap ---------- */
+.road { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 820px) { .road { grid-template-columns: 1fr; } }
+.stage { border: 1px solid var(--line); border-radius: 16px; padding: 24px; background: var(--moss); display: grid; gap: 16px; align-content: start; }
+.stage.now { border-color: color-mix(in oklab, var(--ok) 40%, var(--line)); }
+.stage header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.stage ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.stage li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; color: var(--fog-dim); font-size: 15px; }
+.stage li svg { width: 18px; height: 18px; margin-top: 3px; }
+.stage.now li svg { color: var(--ok); }
+.stage.next li svg { color: var(--fog-faint); }
+
+/* ---------- team ---------- */
+.team { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 980px) { .team { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .team { grid-template-columns: 1fr; } }
+.member { display: grid; gap: 12px; align-content: start; padding: 20px; border-radius: 16px; background: var(--moss-2); border: 1px solid var(--line); }
+.member .ring { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font: 800 18px/1 var(--display); color: var(--night); background: var(--c); }
+.member p { color: var(--fog-dim); font-size: 14px; }
+.member a { font: 400 13px/1 var(--mono); color: var(--sun); text-decoration: none; }
+.member a:hover { text-decoration: underline; }
+
+/* ---------- footer cta ---------- */
+.final { position: relative; overflow: hidden; padding-block: clamp(70px, 10vw, 120px); }
+.final::before { content: ""; position: absolute; inset: 0; background: url("img/forest-desktop.jpg") center 70% / cover; opacity: .22; filter: saturate(.8); }
+.final::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, var(--night), transparent 40%, transparent 60%, var(--night)); }
+.final .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; justify-items: start; }
+.final .wrap > * { max-width: 100%; }
+.final h2 { max-width: 16ch; }
+.install { display: flex; align-items: center; gap: 12px; max-width: 100%; padding: 10px 10px 10px 16px; border-radius: 12px; background: color-mix(in oklab, var(--night) 80%, transparent); border: 1px solid var(--line); font: 400 14px/1.4 var(--mono); }
+.install code { overflow-x: auto; white-space: nowrap; min-width: 0; }
+.install code span { color: var(--sun); }
+footer.foot { border-top: 1px solid var(--line); padding-block: 26px; color: var(--fog-faint); font-size: 13px; }
+footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+/* gentle scroll reveal where supported; content stays visible at rest */
+@supports (animation-timeline: view()) {
+  .reveal { animation: reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+  @keyframes reveal { from { opacity: .3; transform: translateY(24px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Головна навігація">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Container Forest, на початок">
+      <svg viewBox="2 2 60 60" aria-hidden="true">
+      <defs>
+      <linearGradient id="a-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c6a47"/><stop offset="1" stop-color="#123323"/>
+      </linearGradient>
+      <clipPath id="a-tile"><rect x="2" y="2" width="60" height="60" rx="12"/></clipPath>
+      </defs>
+      <g clip-path="url(#a-tile)">
+      <rect x="2" y="2" width="60" height="60" fill="url(#a-body)"/>
+      <path fill="#0b1d14" d="M9.5 31L13.1 51H5.9ZM18.5 22L22.1 51H14.9ZM27.5 33L31.1 51H23.9ZM36.5 16L40.1 51H32.9ZM45.5 26L49.1 51H41.9ZM54.5 30L58.1 51H50.9Z"/>
+      <rect x="2" y="2" width="60" height="9" fill="#efc27c"/>
+      <path fill="#d6a45e" d="M5.5 2h3v7.6h-3ZM11.5 2h3v7.6h-3ZM17.5 2h3v7.6h-3ZM23.5 2h3v7.6h-3ZM29.5 2h3v7.6h-3ZM35.5 2h3v7.6h-3ZM41.5 2h3v7.6h-3ZM47.5 2h3v7.6h-3ZM53.5 2h3v7.6h-3ZM59.5 2h3v7.6h-3Z"/>
+      <rect x="2" y="9.6" width="60" height="1.4" fill="#c9934a"/>
+      </g>
+      </svg>
+      container&#8209;forest
+    </a>
+    <div class="nav-links">
+      <a href="#features">Можливості</a>
+      <a href="#how">Як працює</a>
+      <a href="#secrets">Секрети</a>
+      <a href="#compare">Порівняння</a>
+      <a href="#team">Команда</a>
+    </div>
+    <a class="btn btn-ghost btn-sm" href="https://github.com/lepterion/container-forest" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <picture>
+    <source media="(max-width: 640px) and (orientation: portrait)" srcset="img/forest-phone.jpg">
+    <source media="(orientation: portrait)" srcset="img/forest-tablet.jpg">
+    <img src="img/forest-desktop.jpg" alt="" fetchpriority="high" decoding="async">
+  </picture>
+  <div class="rays" aria-hidden="true">
+    <i style="--x:62%;--w:90px;--a:.10;--d:7s;--dl:0s"></i>
+    <i style="--x:72%;--w:46px;--a:.14;--d:9s;--dl:-3s"></i>
+    <i style="--x:80%;--w:130px;--a:.08;--d:11s;--dl:-6s"></i>
+    <i style="--x:90%;--w:60px;--a:.12;--d:8s;--dl:-2s"></i>
+  </div>
+  <canvas class="motes" aria-hidden="true"></canvas>
+  <div class="hero-inner wrap">
+    <div class="hero-copy">
+      <span class="badge rise"><span class="dot"></span>Альфа-версія · навчальний проєкт ООП</span>
+      <h1 class="rise" style="--dl:.08s">Усі ваші сервери на <em>одній галявині</em></h1>
+      <p class="lede rise" style="--dl:.18s">Керуйте Docker-контейнерами на кількох серверах з однієї вебпанелі, з Discord або з терміналу. Конфігурація живе в git, а секрети в ньому зашифровані.</p>
+      <div class="hero-cta rise" style="--dl:.28s">
+        <a class="btn btn-sun" href="#demo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Подивитися, як це виглядає
+        </a>
+        <a class="btn btn-ghost" href="#how">Як це влаштовано</a>
+      </div>
+    </div>
+    <div class="facts rise" style="--dl:.4s">
+      <div class="fact"><b>0</b><span>відкритих вхідних портів на серверах</span></div>
+      <div class="fact"><b>4</b><span>ролі доступу: на сервер або на окремий стек</span></div>
+      <div class="fact"><b>3</b><span>способи керувати: панель, Discord, CLI</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Для кого</span>
+        <h2>Для кількох серверів і невеликої команди</h2>
+        <p class="lede">Звичайний Docker і Compose, без Kubernetes і Swarm. Для команди, де в людей різний рівень доступу.</p>
+      </div>
+      <div class="jobs">
+        <article class="job reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>
+          <h3>Усі сервери в одному місці</h3>
+          <p>Стан кожного сервера й контейнера видно в панелі. Не треба заходити на кожен по SSH.</p>
+        </article>
+        <article class="job reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <h3>Секрети в git, але зашифровані</h3>
+          <p>Конфігурація разом із паролями лежить в одному репозиторії. Відкритим текстом не зберігається нічого.</p>
+        </article>
+        <article class="job reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M17 11l2 2 3-4"/></svg>
+          <h3>Рівно стільки доступу, скільки треба</h3>
+          <p>Дайте людині право перезапускати один сервіс на одному сервері, без повного доступу до решти.</p>
+        </article>
+        <article class="job reveal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+          <h3>Перезапуск з телефона</h3>
+          <p>Сервіс упав, а ноутбука поруч немає? Одна команда в Discord, з тими самими правами, що й у панелі.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo" class="band">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Панель · Discord · CLI</span>
+        <h2>Одна дія, три способи</h2>
+        <p class="lede">Натисніть «Перезапустити» біля будь-якого контейнера або перемкніть сервер.</p>
+      </div>
+      <div class="demo">
+        <div class="window reveal" aria-label="Приклад вебпанелі">
+          <div class="win-bar"><span class="lights"><i></i><i></i><i></i></span><span class="title">panel · Контейнери</span></div>
+          <div class="envs" role="group" aria-label="Сервери">
+            <button class="env" id="env-prod" aria-pressed="true" data-env="prod"><span class="dot"></span>prod-kyiv</button>
+            <button class="env" id="env-staging" aria-pressed="false" data-env="staging"><span class="dot"></span>staging</button>
+            <button class="env" id="env-home" aria-pressed="false" data-env="home"><span class="dot off"></span>home-lab</button>
+          </div>
+          <div class="table-wrap">
+            <table class="ct">
+              <thead><tr><th>Контейнер</th><th>Стан</th><th>CPU</th><th>Працює</th><th><span class="sr-only">Дія</span></th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="side-stack">
+          <div class="window reveal" aria-label="Приклад розмови з Discord-ботом">
+            <div class="win-bar"><span class="lights"><i></i><i></i><i></i></span><span class="title"># ops</span></div>
+            <div class="chat" id="chat" aria-live="polite"></div>
+          </div>
+          <div class="window reveal" aria-label="Приклад CLI forest">
+            <div class="win-bar"><span class="lights"><i></i><i></i><i></i></span><span class="title">zsh · forest</span></div>
+            <div class="term" id="term"><span class="p">$</span> forest containers ls --env prod-kyiv</div>
+          </div>
+        </div>
+      </div>
+      <p class="demo-note">Сервери, контейнери й повідомлення тут вигадані для прикладу.</p>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Архітектура</span>
+        <h2>Агент дзвонить сам</h2>
+        <p class="lede">На кожному сервері працює агент. Він сам підключається до центрального сервісу і тримає з ним постійний gRPC-стрім.</p>
+      </div>
+      <div class="arch">
+        <div class="diagram reveal">
+          <svg viewBox="0 0 900 430" role="img" aria-label="Схема: панель, Discord-бот і CLI звертаються до центрального агрегатора; агенти на серверах A і B самі підключаються до нього gRPC-стрімом; агрегатор читає конфігурацію з git">
+            <!-- wires (static) + flows (animated) -->
+            <path class="wire" d="M200 82 C 290 82, 290 175, 350 175"/>
+            <path class="flow" d="M200 82 C 290 82, 290 175, 350 175"/>
+            <path class="wire" d="M200 215 L 350 215"/>
+            <path class="flow" d="M200 215 L 350 215"/>
+            <path class="wire" d="M200 348 C 290 348, 290 255, 350 255"/>
+            <path class="flow" d="M200 348 C 290 348, 290 255, 350 255"/>
+            <path class="wire" d="M680 110 C 620 110, 620 180, 570 180"/>
+            <path class="flow" d="M680 110 C 620 110, 620 180, 570 180"/>
+            <path class="wire" d="M680 320 C 620 320, 620 250, 570 250"/>
+            <path class="flow" d="M680 320 C 620 320, 620 250, 570 250"/>
+            <path class="wire" d="M460 140 L 460 76"/>
+            <path class="flow rev" d="M460 140 L 460 76"/>
+            <text class="lbl" x="214" y="112">HTTPS + SignalR</text>
+            <text class="lbl" x="238" y="206">gRPC</text>
+            <text class="lbl" x="214" y="330">HTTPS, API-токен</text>
+            <text class="lbl" x="590" y="146">gRPC-стрім</text>
+            <text class="lbl" x="590" y="296">gRPC-стрім</text>
+            <text class="lbl" x="472" y="112">git fetch</text>
+            <!-- clients -->
+            <g class="node"><rect x="40" y="52" width="160" height="60" rx="12"/><text x="60" y="80">Вебпанель</text><text class="sub" x="60" y="98">React SPA</text></g>
+            <g class="node"><rect x="40" y="185" width="160" height="60" rx="12"/><text x="60" y="213">Discord-бот</text><text class="sub" x="60" y="231">ті самі права</text></g>
+            <g class="node"><rect x="40" y="318" width="160" height="60" rx="12"/><text x="60" y="346">CLI forest</text><text class="sub" x="60" y="364">скрипти, термінал</text></g>
+            <!-- core -->
+            <g class="node core"><rect x="350" y="140" width="220" height="150" rx="16"/>
+              <text x="370" y="174">Центральний</text><text x="370" y="194">агрегатор</text>
+              <text class="sub" x="370" y="224">права і ролі</text>
+              <text class="sub" x="370" y="244">розшифрування SOPS</text>
+              <text class="sub" x="370" y="264">SQLite</text></g>
+            <g class="node"><rect x="380" y="30" width="160" height="46" rx="23"/><text x="404" y="58">Git-репозиторій</text></g>
+            <!-- servers -->
+            <g class="node srv"><rect x="680" y="40" width="190" height="140" rx="14"/>
+              <text class="sub" x="698" y="64">СЕРЕДОВИЩЕ A · за NAT</text>
+              <g class="node"><rect x="698" y="78" width="154" height="40" rx="9"/><text x="714" y="103">Агент</text></g>
+              <g class="node"><rect x="698" y="126" width="154" height="40" rx="9"/><text x="714" y="151">Docker Engine</text></g></g>
+            <g class="node srv"><rect x="680" y="250" width="190" height="140" rx="14"/>
+              <text class="sub" x="698" y="274">СЕРЕДОВИЩЕ B</text>
+              <g class="node"><rect x="698" y="288" width="154" height="40" rx="9"/><text x="714" y="313">Агент</text></g>
+              <g class="node"><rect x="698" y="336" width="154" height="40" rx="9"/><text x="714" y="361">Docker Engine</text></g></g>
+          </svg>
+        </div>
+        <div class="points">
+          <div class="point reveal"><h3>Жодних відкритих портів</h3><p>Docker API не виставляється в мережу. Сервери можуть стояти за NAT: з'єднання завжди починає агент.</p></div>
+          <div class="point reveal"><h3>Лише відомі команди</h3><p>Агент виконує фіксований набір типізованих команд з Protocol Buffers. Команди «виконай довільний shell» немає.</p></div>
+          <div class="point reveal"><h3>Права живуть у центрі</h3><p>Ролі й секрети знає лише центральний сервіс. Панель, бот і CLI просто ховають недоступні дії.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="secrets" class="band">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">SOPS + age</span>
+        <h2>Пароль у git, але прочитати його нікому</h2>
+        <p class="lede">Секрети шифруються окремим ключем для кожного сервера. Розшифровуються вони лише в центральному сервісі, безпосередньо перед розгортанням.</p>
+      </div>
+      <div class="secrets">
+        <div class="codecard reveal">
+          <header><b>stacks/shop/secrets.enc.yaml</b><span>у git-репозиторії</span></header>
+<pre><span class="k">DB_PASSWORD:</span> <span class="enc" data-plain="tr33-r1ngs-42">ENC[AES256_GCM,data:9xK2b0Qa,type:str]</span>
+<span class="k">SMTP_TOKEN:</span> <span class="enc" data-plain="sm_live_8f3e1c">ENC[AES256_GCM,data:Qm7vZr1w,type:str]</span>
+<span class="k">sops:</span>
+  <span class="k">age:</span>
+    - <span class="k">recipient:</span> age1prodkyiv7h…q2</pre>
+        </div>
+        <div class="arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="codecard reveal">
+          <header><b>prod-kyiv · під час деплою</b><span>лише в пам'яті агента</span></header>
+<pre><span class="k">DB_PASSWORD:</span> <span class="dec" id="dec1">tr33-r1ngs-42</span>
+<span class="k">SMTP_TOKEN:</span> <span class="dec" id="dec2">sm_live_8f3e1c</span>
+<span class="no"># розшифровано ключем prod-kyiv</span>
+<span class="no"># staging цей файл не прочитає</span>
+</pre>
+        </div>
+      </div>
+      <div class="keys reveal" aria-label="Ключі середовищ">
+        <span class="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg>prod-kyiv · age1prodkyiv7h…</span>
+        <span class="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg>staging · age1stg04ld…</span>
+        <span class="key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg>home-lab · age1hm9x2ew…</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="roles">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Ролі</span>
+        <h2>Доступ на сервер або на один стек</h2>
+        <p class="lede">Роль видається на все середовище або на окремий стек. На стеку діє більша з двох ролей.</p>
+      </div>
+      <div class="roles-wrap reveal">
+        <table class="roles">
+          <thead>
+            <tr><th scope="col"><span class="sr-only">Дія</span></th>
+              <th scope="col">Viewer<small>дивиться</small></th>
+              <th scope="col">Operator<small>перезапускає</small></th>
+              <th scope="col">Editor<small>розгортає</small></th>
+              <th scope="col">Admin<small>керує всім</small></th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Стеки, стан і логи</th><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">start / stop / restart</th><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">exec і консоль</th><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Редагування стеку й деплой</th><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">Користувачі й журнал аудиту</th><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="warn-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>Editor на середовищі фактично має root на хості: compose-файл може змонтувати <code>/</code> або запустити privileged-контейнер. Видавайте цю роль свідомо.</p>
+    </div>
+  </section>
+
+  <section id="compare" class="band">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Порівняння</span>
+        <h2>Поруч із Portainer, Dockge і Komodo</h2>
+        <p class="lede">Ідея схожа на Portainer. Відрізняємося секретами в git, Discord-ботом і свідомо вужчим скоупом.</p>
+      </div>
+      <div class="cmp-wrap reveal">
+        <table class="cmp">
+          <thead><tr><th scope="col"><span class="sr-only">Можливість</span></th><th scope="col">Portainer CE</th><th scope="col">Dockge</th><th scope="col">Komodo</th><th scope="col" class="us">container-forest</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Основний фокус</th><td>універсальна панель, з 3.x насамперед Kubernetes</td><td>простий менеджер compose-стеків</td><td>збірка й розгортання на багатьох серверах</td><td class="us">звичайний Docker, кілька серверів, невелика команда</td></tr>
+            <tr><th scope="row">Агент сам ініціює з'єднання</th><td>лише в Edge-режимі</td><td>ні</td><td>так, з версії 2</td><td class="us">так, це єдиний режим</td></tr>
+            <tr><th scope="row">Секрети, зашифровані в git</th><td>ні</td><td>ні</td><td>ні, власне сховище</td><td class="us">так, окремий ключ на сервер</td></tr>
+            <tr><th scope="row">Ролі на окремі стеки</th><td>так</td><td>ні, один обліковий запис</td><td>так</td><td class="us">так, включно з окремими стеками</td></tr>
+            <tr><th scope="row">Керування через Discord</th><td>ні</td><td>ні</td><td>ні</td><td class="us">так, з тими самими правами</td></tr>
+            <tr><th scope="row">restart / redeploy / redeploy with pull</th><td>ні, одна дія оновлення</td><td>частково</td><td>так</td><td class="us">так</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="honest">У чому поступаємося: зрілість, кількість функцій, підтримка Swarm і Kubernetes, збірка образів, розмір спільноти. Стан аналогів на вересень 2026 року.</p>
+    </div>
+  </section>
+
+  <section id="roadmap">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Дорожня карта</span>
+        <h2>Що вже росте і що посаджено</h2>
+      </div>
+      <div class="road">
+        <article class="stage now reveal">
+          <header><h3>Альфа-версія</h3><span class="pill run"><i></i>у розробці</span></header>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Агент на кожному сервері, реєстрація за одноразовим токеном, статус онлайн і офлайн</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Контейнери, їхній стан і логи; запуск, зупинка, перезапуск</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Вхід за логіном і паролем, доступ до окремих серверів</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Розгортання стеку з git-репозиторію</li>
+          </ul>
+        </article>
+        <article class="stage next reveal">
+          <header><h3>Остаточна версія</h3><span class="pill stop"><i></i>заплановано</span></header>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Секрети SOPS з окремим ключем для кожного сервера</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Ролі Viewer, Operator, Editor, Admin і журнал аудиту</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Passkey, вхід через Discord, 2FA і OIDC</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>CLI forest з персональними API-токенами</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Історія деплоїв з відкатом і графіки ресурсів</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="team" class="band">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">ІПС-22 · курс ООП</span>
+        <h2>Хто стоїть за проєктом</h2>
+      </div>
+      <div class="team">
+        <article class="member reveal"><span class="ring" style="--c:#efc27c">БП</span><h3>Богдан Петренко</h3><p>Team Lead, архітектура й безпека. Центральний сервіс, агент, DevOps.</p><a href="https://github.com/lepterion" target="_blank" rel="noopener">@lepterion</a></article>
+        <article class="member reveal"><span class="ring" style="--c:#8cc56a">ВБ</span><h3>Володимир Бояр</h3><p>Backend агента: обробники команд, Docker і Docker Compose.</p><a href="https://github.com/volodaboyar1-star" target="_blank" rel="noopener">@volodaboyar1-star</a></article>
+        <article class="member reveal"><span class="ring" style="--c:#b9764e">ДС</span><h3>Дмитро Синенко</h3><p>Discord-бот і система сповіщень.</p><a href="https://github.com/Dmyt-S" target="_blank" rel="noopener">@Dmyt-S</a></article>
+        <article class="member reveal"><span class="ring" style="--c:#c9d6c0">ЛД</span><h3>Любов Денисенко</h3><p>Вебпанель і UI/UX. API для панелі, користувачі, аудит.</p><a href="https://github.com/denysenkoliubov" target="_blank" rel="noopener">@denysenkoliubov</a></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <span class="eyebrow">Відкритий код</span>
+      <h2 class="reveal">Загляньте в ліс зсередини</h2>
+      <p class="lede">C# і .NET 10, React і TypeScript, gRPC, SOPS і age. Архітектура й рішення описані в документації репозиторію.</p>
+      <div class="install">
+        <code id="clone"><span>$</span> git clone https://github.com/lepterion/container-forest.git</code>
+        <button class="act" id="copy-clone" type="button">Копіювати</button>
+      </div>
+      <a class="btn btn-sun" href="https://github.com/lepterion/container-forest" target="_blank" rel="noopener">Відкрити репозиторій</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap"><span>container-forest · альфа-версія · 2026</span><span>Навчальний проєкт курсу ООП, ІПС-22</span></div>
+</footer>
+
+<style>.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}</style>
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- dust motes in the sunbeams: tiny canvas, paused when the hero is off-screen
+  const cv = document.querySelector('.motes'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, motes = [], running = false, raf = 0;
+  const size = () => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const n = Math.round(Math.min(70, W / 22));
+    motes = Array.from({ length: n }, () => ({ x: W * (0.35 + Math.random() * 0.65), y: Math.random() * H, r: Math.random() * 1.6 + 0.4, vx: -0.08 - Math.random() * 0.12, vy: 0.05 + Math.random() * 0.12, p: Math.random() * 6.28 }));
+  };
+  const draw = (t) => {
+    ctx.clearRect(0, 0, W, H);
+    for (const m of motes) {
+      m.x += m.vx; m.y += m.vy; m.p += 0.01;
+      if (m.y > H || m.x < 0) { m.x = W * (0.4 + Math.random() * 0.6); m.y = -4; }
+      const a = 0.25 + 0.35 * Math.sin(m.p + t / 1400);
+      ctx.fillStyle = `rgba(255,232,180,${Math.max(0, a)})`;
+      ctx.beginPath(); ctx.arc(m.x + Math.sin(m.p) * 6, m.y, m.r, 0, 6.283); ctx.fill();
+    }
+    if (running) raf = requestAnimationFrame(draw);
+  };
+  if (!reduce) {
+    size(); addEventListener('resize', size);
+    new IntersectionObserver(([e]) => {
+      running = e.isIntersecting; cancelAnimationFrame(raf); if (running) raf = requestAnimationFrame(draw);
+    }).observe(cv);
+  }
+
+  // ---- demo data (example only)
+  const DATA = {
+    prod: [
+      { n: 'shop-api', s: 'shop', st: 'run', cpu: [3, 4, 6, 5, 8, 6, 7, 5, 6, 4], up: '12 д 4 год' },
+      { n: 'shop-web', s: 'shop', st: 'run', cpu: [2, 2, 3, 2, 4, 3, 2, 3, 2, 2], up: '12 д 4 год' },
+      { n: 'postgres', s: 'shop', st: 'run', cpu: [5, 6, 5, 7, 6, 8, 7, 6, 7, 6], up: '31 д' },
+      { n: 'worker', s: 'jobs', st: 'err', cpu: [8, 9, 0, 0, 0, 0, 0, 0, 0, 0], up: 'впав 6 хв тому' },
+    ],
+    staging: [
+      { n: 'shop-api', s: 'shop', st: 'run', cpu: [1, 2, 1, 3, 2, 1, 2, 2, 1, 2], up: '2 год 15 хв' },
+      { n: 'shop-web', s: 'shop', st: 'stop', cpu: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], up: 'зупинено' },
+      { n: 'mailhog', s: 'tools', st: 'run', cpu: [1, 1, 1, 1, 2, 1, 1, 1, 1, 1], up: '5 д' },
+    ],
+    home: [],
+  };
+  const LABEL = { run: 'працює', stop: 'зупинено', wait: 'перезапуск…', err: 'впав' };
+  const rows = document.getElementById('rows');
+  let env = 'prod';
+  const spark = (v) => {
+    const max = Math.max(10, ...v), pts = v.map((y, i) => [i * 8, 20 - (y / max) * 18]);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1].toFixed(1)).join(' ');
+    return `<svg class="spark" viewBox="0 0 72 22" aria-hidden="true"><path class="area" d="${d} L72 22 L0 22 Z"/><path d="${d}"/></svg>`;
+  };
+  const render = () => {
+    const list = DATA[env];
+    if (!list.length) {
+      rows.innerHTML = `<tr><td colspan="5" style="white-space:normal;color:var(--fog-dim);padding:28px 10px">Агент home-lab офлайн 3 год. Контейнери з'являться, щойно він знову підключиться.</td></tr>`;
+      return;
+    }
+    rows.innerHTML = list.map((c, i) => `<tr>
+      <td class="name">${c.n}<small>стек ${c.s}</small></td>
+      <td><span class="pill ${c.st}"><i></i>${LABEL[c.st]}</span></td>
+      <td>${spark(c.cpu)}</td>
+      <td>${c.up}</td>
+      <td><button class="act" data-i="${i}" ${c.st === 'wait' ? 'disabled' : ''}>${c.st === 'stop' ? 'Запустити' : 'Перезапустити'}</button></td>
+    </tr>`).join('');
+  };
+  document.querySelectorAll('.env').forEach(b => b.addEventListener('click', () => {
+    env = b.dataset.env;
+    document.querySelectorAll('.env').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
+  rows.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]'); if (!b) return;
+    const c = DATA[env][+b.dataset.i], here = env;
+    c.st = 'wait'; render();
+    setTimeout(() => {
+      c.st = 'run'; c.up = 'щойно'; c.cpu = [...c.cpu.slice(1), 4];
+      if (env === here) render();
+    }, 1800);
+  });
+  render();
+
+  // ---- discord + terminal, played once when they scroll into view
+  const chat = document.getElementById('chat'), term = document.getElementById('term');
+  const say = (html) => { const d = document.createElement('div'); d.className = 'msg'; d.innerHTML = html; chat.appendChild(d); return d; };
+  const wait = (ms) => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+  const user = (t) => `<span class="ava u">ОК</span><div><div class="who">olena<small>сьогодні о 07:42</small></div><div class="txt">${t}</div></div>`;
+  const bot = (t) => `<span class="ava b">CF</span><div><div class="who">forest-bot<small>бот</small></div><div class="txt">${t}</div></div>`;
+  async function playChat() {
+    say(user('<code>/restart worker env:prod-kyiv</code>'));
+    await wait(700);
+    const typing = say(bot('<span class="typing"><i></i><i></i><i></i></span>'));
+    await wait(1300);
+    typing.innerHTML = bot('Перезапускаю <code>worker</code> на prod-kyiv…<div class="embed">✓ worker працює · 1.8 с · роль: Operator</div>');
+    const w = DATA.prod.find(c => c.n === 'worker'); w.st = 'run'; w.up = 'щойно'; if (env === 'prod') render();
+  }
+  async function playTerm() {
+    const lines = [
+      '\n<span class="ok">●</span> shop-api   працює    12 д',
+      '\n<span class="ok">●</span> shop-web   працює    12 д',
+      '\n<span class="ok">●</span> postgres   працює    31 д',
+      '\n<span class="ok">●</span> worker     працює    щойно',
+      '\n\n<span class="p">$</span> forest stack redeploy shop --pull',
+      '\n  pull   ghcr.io/team/shop-api:1.4.2  <span class="ok">ok</span>',
+      '\n  up     shop-api shop-web            <span class="ok">ok</span>',
+      '\n<span class="ok">✓</span> shop розгорнуто з коміту a41c9e2',
+    ];
+    for (const l of lines) { await wait(420); term.insertAdjacentHTML('beforeend', l); }
+    term.insertAdjacentHTML('beforeend', '\n<span class="p">$</span> <span class="caret"></span>');
+  }
+  let played = false;
+  new IntersectionObserver(([e], o) => {
+    if (!e.isIntersecting || played) return;
+    played = true; o.disconnect(); playChat(); setTimeout(playTerm, reduce ? 0 : 900);
+  }, { threshold: 0.35 }).observe(document.getElementById('demo'));
+
+  // ---- SOPS scramble: encrypted value "decrypts" into the plain one, repeating
+  const glyphs = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz0123456789+/=';
+  const scramble = (el, to) => {
+    if (reduce) { el.textContent = to; return; }
+    let f = 0; const total = 22;
+    const id = setInterval(() => {
+      f++;
+      el.textContent = to.split('').map((ch, i) => i < (f / total) * to.length ? ch : glyphs[(Math.random() * glyphs.length) | 0]).join('');
+      if (f >= total) clearInterval(id);
+    }, 45);
+  };
+  const decs = [['dec1', 'tr33-r1ngs-42'], ['dec2', 'sm_live_8f3e1c']];
+  let secTimer = 0;
+  new IntersectionObserver(([e]) => {
+    clearInterval(secTimer);
+    if (!e.isIntersecting) return;
+    const run = () => decs.forEach(([id, v], k) => setTimeout(() => scramble(document.getElementById(id), v), k * 300));
+    run(); if (!reduce) secTimer = setInterval(run, 5200);
+  }, { threshold: 0.4 }).observe(document.getElementById('secrets'));
+
+  // ---- copy clone command
+  document.getElementById('copy-clone').addEventListener('click', async (e) => {
+    const btn = e.currentTarget, text = 'git clone https://github.com/lepterion/container-forest.git';
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Скопійовано'; }
+    catch { const r = document.createRange(); r.selectNodeContents(document.getElementById('clone')); getSelection().removeAllRanges(); getSelection().addRange(r); btn.textContent = 'Виділено'; }
+    setTimeout(() => (btn.textContent = 'Копіювати'), 1800);
+  });
+})();
+</script>
+
+</body>
+</html>

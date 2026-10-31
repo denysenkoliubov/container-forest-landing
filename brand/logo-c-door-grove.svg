@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="c-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c6a47"/><stop offset="1" stop-color="#143a27"/>
+    </linearGradient>
+    <mask id="c-cut">
+      <rect width="64" height="64" fill="#fff"/>
+      <path stroke="#000" stroke-width="1.8" stroke-linecap="round" d="M15.5 14v36M48.5 14v36"/>
+    </mask>
+  </defs>
+  <rect x="8" y="9" width="48" height="46" rx="4" fill="url(#c-body)" mask="url(#c-cut)"/>
+  <path d="M32 15L39.5 27H35.5L43 39H34.2V49H29.8V39H21L28.5 27H24.5Z" fill="#efc27c" opacity=".9"/>
+</svg>
