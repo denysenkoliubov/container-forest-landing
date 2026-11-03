@@ -190,6 +190,9 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; }
 .msg code { background: var(--night); padding: 1px 6px; border-radius: 5px; color: var(--fog); font-size: 12.5px; }
 .embed { margin-top: 6px; border-left: 3px solid var(--ok); background: var(--night); border-radius: 6px; padding: 8px 10px; font-size: 13px; color: var(--fog-dim); }
 .typing { display: inline-flex; gap: 3px; }
+.dbtns { display: flex; gap: 8px; margin-top: 8px; }
+.dbtn { padding: 6px 12px; border-radius: 6px; background: var(--line); color: var(--fog); font: 600 12.5px/1 var(--body); transition: background .2s; }
+.dbtn.on { background: var(--ok); color: #10200a; }
 .typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--fog-faint); animation: blink 1s infinite; }
 .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
 .term { padding: 14px 16px 18px; font: 400 13px/1.7 var(--mono); color: var(--fog-dim); min-height: 170px; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -247,7 +250,7 @@ table { border-collapse: collapse; width: 100%; font-size: 14px; }
 
 /* ---------- compare ---------- */
 .cmp-wrap { overflow-x: auto; }
-.cmp { min-width: 760px; }
+.cmp { min-width: 900px; }
 .cmp th, .cmp td { padding: 14px 14px; border-top: 1px solid var(--line); text-align: left; font-size: 14px; vertical-align: top; }
 .cmp thead th { border-top: 0; font: 700 14px/1.2 var(--body); color: var(--fog-dim); }
 .cmp thead th.us { color: var(--sun); }
@@ -353,7 +356,7 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
   <canvas class="motes" aria-hidden="true"></canvas>
   <div class="hero-inner wrap">
     <div class="hero-copy">
-      <span class="badge rise"><span class="dot"></span>Альфа-версія · навчальний проєкт ООП</span>
+      <span class="badge rise"><span class="dot"></span>Альфа-версія · у продакшні з жовтня 2026</span>
       <h1 class="rise" style="--dl:.08s">Усі ваші сервери на <em>одній галявині</em></h1>
       <p class="lede rise" style="--dl:.18s">Керуйте Docker-контейнерами на кількох серверах з однієї вебпанелі, з Discord або з терміналу. Конфігурація живе в git, а секрети в ньому зашифровані.</p>
       <div class="hero-cta rise" style="--dl:.28s">
@@ -366,7 +369,7 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
     </div>
     <div class="facts rise" style="--dl:.4s">
       <div class="fact"><b>0</b><span>відкритих вхідних портів на серверах</span></div>
-      <div class="fact"><b>4</b><span>ролі доступу: на сервер або на окремий стек</span></div>
+      <div class="fact"><b>22</b><span>сервіси команди на трьох серверах уже розгорнуті через нього</span></div>
       <div class="fact"><b>3</b><span>способи керувати: панель, Discord, CLI</span></div>
     </div>
   </div>
@@ -410,7 +413,7 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
       <div class="sec-head reveal">
         <span class="eyebrow">Панель · Discord · CLI</span>
         <h2>Одна дія, три способи</h2>
-        <p class="lede">Натисніть «Перезапустити» біля будь-якого контейнера або перемкніть сервер.</p>
+        <p class="lede">Натисніть «Перезапустити» біля будь-якого контейнера або перемкніть сервер. У Discord бот сам повідомляє про впалий контейнер, а перезапустити його можна кнопкою під повідомленням.</p>
       </div>
       <div class="demo">
         <div class="window reveal" aria-label="Приклад вебпанелі">
@@ -507,7 +510,7 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
       <div class="sec-head reveal">
         <span class="eyebrow">SOPS + age</span>
         <h2>Пароль у git, але прочитати його нікому</h2>
-        <p class="lede">Секрети шифруються окремим ключем для кожного сервера. Розшифровуються вони лише в центральному сервісі, безпосередньо перед розгортанням.</p>
+        <p class="lede">Секрети шифруються окремим ключем для кожного сервера. Розшифровуються вони лише в центральному сервісі, безпосередньо перед розгортанням. Editor у своєму клоні репозиторію бачить їх відкритим текстом завдяки git-фільтру <code>forest</code>.</p>
       </div>
       <div class="secrets">
         <div class="codecard reveal">
@@ -555,7 +558,7 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
           <tbody>
             <tr><th scope="row">Стеки, стан і логи</th><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
             <tr><th scope="row">start / stop / restart</th><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
-            <tr><th scope="row">exec і консоль</th><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+            <tr><th scope="row">exec і консоль <small style="color:var(--fog-faint);font-weight:500">(у планах)</small></th><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
             <tr><th scope="row">Редагування стеку й деплой</th><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
             <tr><th scope="row">Користувачі й журнал аудиту</th><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td></tr>
           </tbody>
@@ -569,23 +572,25 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
     <div class="wrap">
       <div class="sec-head reveal">
         <span class="eyebrow">Порівняння</span>
-        <h2>Поруч із Portainer, Dockge і Komodo</h2>
-        <p class="lede">Ідея схожа на Portainer. Відрізняємося секретами в git, Discord-ботом і свідомо вужчим скоупом.</p>
+        <h2>Поруч із Portainer, Dockge, Komodo і Arcane</h2>
+        <p class="lede">Ідея схожа на Portainer, і в інфраструктурі команди container-forest уже повністю його замінив. Відрізняємося секретами в git, Discord-ботом і свідомо вужчим скоупом.</p>
       </div>
       <div class="cmp-wrap reveal">
         <table class="cmp">
-          <thead><tr><th scope="col"><span class="sr-only">Можливість</span></th><th scope="col">Portainer CE</th><th scope="col">Dockge</th><th scope="col">Komodo</th><th scope="col" class="us">container-forest</th></tr></thead>
+          <thead><tr><th scope="col"><span class="sr-only">Можливість</span></th><th scope="col">Portainer CE 2.45</th><th scope="col">Dockge 1.5</th><th scope="col">Komodo 2.3</th><th scope="col">Arcane</th><th scope="col" class="us">container-forest</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Основний фокус</th><td>універсальна панель, з 3.x насамперед Kubernetes</td><td>простий менеджер compose-стеків</td><td>збірка й розгортання на багатьох серверах</td><td class="us">звичайний Docker, кілька серверів, невелика команда</td></tr>
-            <tr><th scope="row">Агент сам ініціює з'єднання</th><td>лише в Edge-режимі</td><td>ні</td><td>так, з версії 2</td><td class="us">так, це єдиний режим</td></tr>
-            <tr><th scope="row">Секрети, зашифровані в git</th><td>ні</td><td>ні</td><td>ні, власне сховище</td><td class="us">так, окремий ключ на сервер</td></tr>
-            <tr><th scope="row">Ролі на окремі стеки</th><td>так</td><td>ні, один обліковий запис</td><td>так</td><td class="us">так, включно з окремими стеками</td></tr>
-            <tr><th scope="row">Керування через Discord</th><td>ні</td><td>ні</td><td>ні</td><td class="us">так, з тими самими правами</td></tr>
-            <tr><th scope="row">restart / redeploy / redeploy with pull</th><td>ні, одна дія оновлення</td><td>частково</td><td>так</td><td class="us">так</td></tr>
+            <tr><th scope="row">Розвиток</th><td>заморожений, лише виправлення</td><td>повільний, форки</td><td>активний</td><td>активний</td><td class="us">навчальний проєкт, уже в продакшні</td></tr>
+            <tr><th scope="row">Агент сам ініціює з'єднання</th><td>лише в Edge-режимі</td><td>—</td><td>так</td><td>так (Edge)</td><td class="us">так, це єдиний режим</td></tr>
+            <tr><th scope="row">Розгортання з git</th><td>так</td><td>ні</td><td>так</td><td>частково</td><td class="us">так, публічні й приватні репозиторії, після push</td></tr>
+            <tr><th scope="row">Секрети, зашифровані в git</th><td>ні</td><td>ні</td><td>ні</td><td>ні</td><td class="us">так, окремий ключ на сервер</td></tr>
+            <tr><th scope="row">Ролі на сервер і окремий стек</th><td>на сервер</td><td>ні</td><td>так</td><td>на всю систему</td><td class="us">так</td></tr>
+            <tr><th scope="row">Керування з Discord</th><td>ні</td><td>ні</td><td>ні</td><td>ні</td><td class="us">так, команди й меню з тими самими правами</td></tr>
+            <tr><th scope="row">Сповіщення в Discord</th><td>ні</td><td>ні</td><td>webhook'ом, лише текст</td><td>—</td><td class="us">через бота, з кнопками «Restart» і «Logs»</td></tr>
+            <tr><th scope="row">restart / redeploy / redeploy with pull / down</th><td>ні</td><td>частково</td><td>так</td><td>частково</td><td class="us">так</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="honest">У чому поступаємося: зрілість, кількість функцій, підтримка Swarm і Kubernetes, збірка образів, розмір спільноти. Стан аналогів на вересень 2026 року.</p>
+      <p class="honest">У чому поступаємося: зрілість, кількість функцій, підтримка Swarm і Kubernetes, збірка образів, розмір спільноти. Стан аналогів на жовтень 2026 року; «—» означає, що даних ми не знайшли.</p>
     </div>
   </section>
 
@@ -597,22 +602,27 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
       </div>
       <div class="road">
         <article class="stage now reveal">
-          <header><h3>Альфа-версія</h3><span class="pill run"><i></i>у розробці</span></header>
+          <header><h3>Уже працює</h3><span class="pill run"><i></i>у продакшні з жовтня</span></header>
           <ul>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Агент на кожному сервері, реєстрація за одноразовим токеном, статус онлайн і офлайн</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Контейнери, їхній стан і логи; запуск, зупинка, перезапуск</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Вхід за логіном і паролем, доступ до окремих серверів</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Розгортання стеку з git-репозиторію</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Агент на кожному сервері: реєстрація за одноразовим токеном, статус онлайн і офлайн</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Контейнери, їхній стан і логи; запуск, зупинка, перезапуск</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Деплой стеку з публічного чи приватного git-репозиторію: вручну, після push або з CI; історія деплоїв з прив'язкою до комітів</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Секрети SOPS з окремим ключем для кожного сервера; у клоні репозиторію їх редагують відкритим текстом через <code>forest</code></span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Окремі дії restart, redeploy, redeploy with pull і down</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Ролі Viewer, Operator, Editor, Admin на сервер або на стек, журнал аудиту</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Вхід за паролем, passkey або через Discord</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Discord-бот з командами, меню й сповіщеннями: деплої, падіння контейнерів, агенти офлайн</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>CLI <code>forest</code>: вхід через браузер і API-токени з обмеженнями (лише читання, окремі сервери, строк дії)</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Деплой лише комітів, підписаних SSH-ключем користувача або підтверджених у панелі</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span>Панель українською й англійською, з оновленнями наживо, версткою для телефона і встановленням як застосунок</span></li>
           </ul>
         </article>
         <article class="stage next reveal">
-          <header><h3>Остаточна версія</h3><span class="pill stop"><i></i>заплановано</span></header>
+          <header><h3>Ще в планах</h3><span class="pill stop"><i></i>заплановано</span></header>
           <ul>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Секрети SOPS з окремим ключем для кожного сервера</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Ролі Viewer, Operator, Editor, Admin і журнал аудиту</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Passkey, вхід через Discord, 2FA і OIDC</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>CLI forest з персональними API-токенами</li>
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>Історія деплоїв з відкатом і графіки ресурсів</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg><span>2FA і вхід через OIDC</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg><span>Відкат деплою з панелі, графіки використання ресурсів</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg><span>Живий потік логів, консоль контейнера</span></li>
           </ul>
         </article>
       </div>
@@ -744,11 +754,14 @@ footer.foot .wrap { display: flex; justify-content: space-between; gap: 14px; fl
   const user = (t) => `<span class="ava u">ОК</span><div><div class="who">olena<small>сьогодні о 07:42</small></div><div class="txt">${t}</div></div>`;
   const bot = (t) => `<span class="ava b">CF</span><div><div class="who">forest-bot<small>бот</small></div><div class="txt">${t}</div></div>`;
   async function playChat() {
-    say(user('<code>/restart worker env:prod-kyiv</code>'));
-    await wait(700);
+    const note = say(bot('<div class="embed" style="border-color:var(--err)"><b style="color:var(--fog)">worker впав</b> на prod-kyiv · стек jobs<br>код виходу 137 (SIGKILL)</div><div class="dbtns"><span class="dbtn">Restart</span><span class="dbtn">Logs</span></div>'));
+    await wait(1600);
+    note.querySelector('.dbtn').classList.add('on');
+    await wait(500);
     const typing = say(bot('<span class="typing"><i></i><i></i><i></i></span>'));
-    await wait(1300);
-    typing.innerHTML = bot('Перезапускаю <code>worker</code> на prod-kyiv…<div class="embed">✓ worker працює · 1.8 с · роль: Operator</div>');
+    await wait(1200);
+    typing.innerHTML = bot('<div class="embed">✓ worker працює · 1.8 с</div><small style="color:var(--fog-faint)">Бачиш лише ти · перезапуск з правами Operator</small>');
+    note.querySelector('.txt').insertAdjacentHTML('beforeend', '<small style="display:block;margin-top:6px;color:var(--fog-faint)">Перезапустила olena о 07:42</small>');
     const w = DATA.prod.find(c => c.n === 'worker'); w.st = 'run'; w.up = 'щойно'; if (env === 'prod') render();
   }
   async function playTerm() {
