@@ -9,9 +9,4 @@ Landing page and brand assets for [Container Forest](https://github.com/lepterio
 - `scene.html`, `scene.js` — the three.js scene used to render the hero images
 - `renders/`, `*-4k.png` — full-resolution renders
 
-## Run locally
-
-```bash
-```
-
-[Then open](https://denysenkoliubov.github.io/container-forest-landing/landing-site/)
+[Then landing page itself](https://denysenkoliubov.github.io/container-forest-landing/landing-site/)
