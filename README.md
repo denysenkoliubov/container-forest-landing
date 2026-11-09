@@ -12,7 +12,6 @@ Landing page and brand assets for [Container Forest](https://github.com/lepterio
 ## Run locally
 
 ```bash
-node server.js 5180
 ```
 
-Then open http://localhost:5180/ (the 3D scene is at /scene.html)
+[Then open](https://denysenkoliubov.github.io/container-forest-landing/landing-site/)
